@@ -66,9 +66,9 @@ JVM在进行GC时，可能针对三个区域进行垃圾回收分别是新生代
 - 灰色：本身扫描完了，但是成员变量还没扫描
 - 白色：未被扫描
 
-* **三色标记法漏标问题**
-![](../resources/sanse2.jpg)
-漏标只有同时满足以下两个条件时才会发生：  
+* **三色标记法漏标问题**  
+![](../resources/sanse2.jpg)  
+漏标只有同时满足以下两个条件时才会发生：    
 条件一：灰色对象 断开了 白色对象的引用；即灰色对象 原来成员变量的引用 发生了变化。  
 条件二：黑色对象 重新引用了 该白色对象；即黑色对象 成员变量增加了 新的引用。
 
@@ -89,13 +89,13 @@ G1: 写屏障 + SATB：执行B -> C时，用写屏障，把C记入到一个队�
 **Serial/serial Old（串行）**：单个线程，GC时候会停止用户线程，不是和任何服务器环境
 ![](../resources/serial.jpg)  
 
-**Parallel/parallelOld（并行）**：多个线程，serial多线程版本。GC时候会停止用户线程，用于大数据计算，注重吞吐量（代码运行时间=（总时间-GC时间）/总时间），与前台交互不多的后台计算。
+**Parallel/parallelOld（并行）**：多个线程，serial多线程版本。GC时候会停止用户线程，用于大数据计算，注重吞吐量（代码运行时间=（总时间-GC时间）/总时间），与前台交互不多的后台计算。  
 ![](../resources/parallel.jpg) 
 
 **parNew**：多个线程，原理跟parallel差不多，但是这个适合追求低停顿的交互场景
 ![](../resources/parnew.jpg) 
 
-**Cms（并发，ConcMarkSweep）**：GC与用户线程并发执行，适用于互联网环境，仅仅是在标记时候短暂STW，其余时间都是和用户线程并发执行。缺点：CPU压力大，有内存碎片（因为它使用标清算法）
+**Cms（并发，ConcMarkSweep）**：GC与用户线程并发执行，适用于互联网环境，仅仅是在标记时候短暂STW，其余时间都是和用户线程并发执行。缺点：CPU压力大，有内存碎片（因为它使用标清算法）  
 ![](../resources/cms.jpg) 
 * 过程
     * 初始标记：Stop The World，仅使用一条初始标记线程从垃圾回收的"根对象"开始，只扫描到能够和"根对象"直接关联的对象，并作标记(该标记并不是三色标记，只是对象头里gc标志位)。
@@ -123,7 +123,7 @@ G1: 写屏障 + SATB：执行B -> C时，用写屏障，把C记入到一个队�
         * 并发标记：使用一条标记线程与用户线程并发执行。速度很慢。等都标记完还要重新处理一下SATB记录下的在并发时有引用改变的对象（<font color=red>三色标记</font>）
         * 最终标记：Stop The World，使用多条标记线程并行执行。处理并发标记结束后仍遗留下来的少量的SATB记录
         * 筛选回收：Stop The World，回收废弃对象，并使用多条筛选回收线程并发执行。
-    * **full gc** 触发条件和cms差不多，也是并发回收失败，担保失败会进行fullgc，退化成serial old gc  
+    * **full gc** 触发条件和cms差不多，也是并发回收失败会进行fullgc，退化成serial old gc  
     
 * 为啥G1可以控制垃圾回收时间  
     在mix gc的第四点（筛选回收）他会根据用户设置的时间长短（默认200ms），以及垃圾多少，选择性回收
@@ -135,7 +135,7 @@ G1: 写屏障 + SATB：执行B -> C时，用写屏障，把C记入到一个队�
     * **rset(remember set，只有g1有)**: 每个region还有个rset，用来记录region被哪个card引用。例如下图Region1中的一个card引用了Region2，那么Region2的Rset就会记录Region1的这个card（写屏障）
     * <font color=red>**总结**</font>  
     ①为啥需要cardtable和rset：因为标记是从新生代到老年代的，新生代的引用了老年代没问题，但是老年代引用了年轻代的对象就有问题，称为跨代引用。用这两个配合，我们只要去扫描rset里的card即可，而不必全盘扫描  
-    ②为啥不直接用cardtable，还要加一个rset：因为G1之前老年代都是连续的，所以只要从老年代开始加上偏移量（偏移量是cardtable的index * 512）就可以了。但是G1的老年代是一块一块的，所以需要类型rset（hash结构，key是region的起始地址， value是card下标，如下图的rset k为region1的开始地址，v为蓝色那张card的下标）。
+    ②为啥不直接用cardtable，还要加一个rset：因为G1之前老年代都是连续的，所以只要从老年代开始加上偏移量（偏移量是cardtable的index * 512）就可以了。但是G1的老年代是一块一块的，所以需要类型rset（hash结构，key是region的起始地址， value是card下标，如下图的rset k为region1的开始地址，v为蓝色那张card的下标）。  
     ![](../resources/rset.jpg)
     
 垃圾收集器7个分4组：1 serial+serialold 2 parnew + cms 3 parallel + parallelold 4 G1
