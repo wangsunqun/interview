@@ -19,6 +19,8 @@ A先变成B再变成A，cas会认为他没变。
 解决方法①加上版本，②用AtomicStampedReference
 ![](../resources/atomicstamprefrence.jpg)
 
+---
+
 ## aqs（AbstractQueueSynchronizer）
 是JUC（java.util.concurrent）包的核心类。 
 ![](../resources/aqs.jpg)
@@ -35,20 +37,21 @@ A先变成B再变成A，cas会认为他没变。
 使用aqs: acquire、release、acquireShared、releaseShared都是aqs定义好的方法可以直接使用，我们只要实现tryacquire、tryrelease、tryacquireShared、tryreleaseShared（实际上tryXXXX系列接口都是对stat操作，包括公平锁和非公平锁，至于队列我们完全不用想，acquire系列接口都帮我们做了，我们只要处理好stat即可）
 
 
-await和signal
-
+### await和signal原理
+![](../resources/await1.jpg)
 
 1、假设初始状态如下，节点A、节点B在同步队列中。
-
+![](../resources/await2.jpg)
 
 2、节点A的线程获取锁权限，此时调用await方法。节点A从同步队列移除， 并加入条件队列中。
-
+![](../resources/await3.jpg)
 
 3、调用 signal方法，从条件队列中取出第一个节点，并加入同步队列中，等待获取资源
-
-
+![](../resources/await4.jpg)
 
 所属的线程挂起，当重新唤醒后，如果发生中断，会直接抛出异常，并将该节点从同步队列中删除。(为了判断挂起这段时间内线程是否被中断)
+
+---
 
 以上都是说同步队列（双向队列），AQS里还有个内部类(ConditionObject)实现了condition接口，里头有个条件队列（单向队列）
 1、await时候会把当前线程放到条件队列里，从同步队列删除（删除节点，释放锁state置0），再判断是否在同步队列里，不存在则挂起。当被singal唤醒后，插入同步队列队尾
