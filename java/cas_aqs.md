@@ -1,10 +1,13 @@
 ## cas（compareAndSwap）
-是以乐观锁思想实现的一种原子操作（读改写）算法。简而言之cas是在读和改之间做了操作，改和写交给底层命令保证原子性。  
 
-### 汇编指令 
+是以乐观锁思想实现的一种原子操作（读改写）算法。简而言之cas是在读和改之间做了操作，改和写交给底层命令保证原子性。
+
+### 汇编指令
+
 cmpxchg(new_val, dest_int, cur);
 
 ### 原理
+
 unsafe是java底层实现cas的工具类。  
 unsafe.compareAndSwapXXX有4个参数：  
 1、当前对象   
@@ -14,7 +17,8 @@ unsafe.compareAndSwapXXX有4个参数：
 
 通过当前对象和和偏移量可以找到内存里的值，与期望值对比，一样则用修改的值进行更新，返回true，不一样（说明期间被人修改过了），返回false
 
-###cas经典的ABA问题
+### cas经典的ABA问题
+
 A先变成B再变成A，cas会认为他没变。  
 解决方法①加上版本，②用AtomicStampedReference
 ![](../resources/atomicstamprefrence.jpg)
@@ -22,22 +26,31 @@ A先变成B再变成A，cas会认为他没变。
 ---
 
 ## aqs（AbstractQueueSynchronizer）
-是JUC（java.util.concurrent）包的核心类。 
+
+是JUC（java.util.concurrent）包的核心类。
 ![](../resources/aqs.jpg)
 
-首先有个volatile int state，他的原理跟synchronizerd有点像。aqs分为独占（ReetrantLock）和共享（CountDownLatch）。stat就是锁，独占和共享区别对于stat是只能一个线程获取还是可以多个线程同时获取
+首先有个volatile int
+state，他的原理跟synchronizerd有点像。aqs分为独占（ReetrantLock）和共享（CountDownLatch）。stat就是锁，独占和共享区别对于stat是只能一个线程获取还是可以多个线程同时获取
 
 #### 独占模式
-以ReentrantLock为例，state初始化为0，表示未锁定状态。A线程lock(执行acquire方法)时，会先用cas将aqs的state属性由0->1，如果失败了, 进入CLH队列。当unlock(执行release方法)时候，会cas将state减1，然后将CLH队首的线程唤醒，在cas去尝试将state由0->1。 acquire和release是对应的，前者是独占模式获取，后者是独占模式释放
+
+以ReentrantLock为例，state初始化为0，表示未锁定状态。A线程lock(执行acquire方法)时，会先用cas将aqs的state属性由0->1，如果失败了, 进入CLH队列。当unlock(执行release方法)
+时候，会cas将state减1，然后将CLH队首的线程唤醒，在cas去尝试将state由0->1。 acquire和release是对应的，前者是独占模式获取，后者是独占模式释放
 
 #### 共享模式
-再以CountDownLatch为例，任务分为N个子线程去执行，state也初始化为N（注意N要与线程个数一致）。这N个子线程是并行执行的，每个子线程执行完后countDown(执行releaseShared方法)一次，state会CAS减1。执行await（执行acquireSharedInterruptibly方法）方法的线程会进入队列并挂起（park），等到state变为0，会唤醒队首的线程，该线程会一个一个传递下去，唤醒队列所有线程。 acquireShared和releaseShared是对应的，前者是共享模式获取，后者是共享模式释放。
+
+再以CountDownLatch为例，任务分为N个子线程去执行，state也初始化为N（注意N要与线程个数一致）。这N个子线程是并行执行的，每个子线程执行完后countDown(执行releaseShared方法)
+一次，state会CAS减1。执行await（执行acquireSharedInterruptibly方法）方法的线程会进入队列并挂起（park），等到state变为0，会唤醒队首的线程，该线程会一个一个传递下去，唤醒队列所有线程。
+acquireShared和releaseShared是对应的，前者是共享模式获取，后者是共享模式释放。
 
 #### tips
-使用aqs: acquire、release、acquireShared、releaseShared都是aqs定义好的方法可以直接使用，我们只要实现tryacquire、tryrelease、tryacquireShared、tryreleaseShared（实际上tryXXXX系列接口都是对stat操作，包括公平锁和非公平锁，至于队列我们完全不用想，acquire系列接口都帮我们做了，我们只要处理好stat即可）
 
+使用aqs:
+acquire、release、acquireShared、releaseShared都是aqs定义好的方法可以直接使用，我们只要实现tryacquire、tryrelease、tryacquireShared、tryreleaseShared（实际上tryXXXX系列接口都是对stat操作，包括公平锁和非公平锁，至于队列我们完全不用想，acquire系列接口都帮我们做了，我们只要处理好stat即可）
 
 ### await和signal原理
+
 ![](../resources/await1.jpg)
 
 1、假设初始状态如下，节点A、节点B在同步队列中。
