@@ -61,9 +61,7 @@ PS: 寄存器和一级二级缓存都在cpu里，三级在外面
 
 **java 内存模型 volatile 是基于 Memory Barrier 实现的**
 
-#### volatile
-
-语义中的内存屏障
+#### volatile语义中的内存屏障
 
 * volatile的内存屏障策略非常严格保守，非常悲观且毫无安全感的心态：
 
