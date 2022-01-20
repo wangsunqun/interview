@@ -63,9 +63,9 @@ native方法
 
 * **类元信息**：在类编译期间放入方法区，里面放置了类的基本信息，包括类的版本、字段、方法、接口以及常量池表（Constant Pool Table）
     * **常量池表**（Constant Pool Table）存储了类在编译期间生成的字面量、符号引用，这些信息在类加载完后会被解析到运行时常量池中
-    * **字面量**：String a = "abc" 这个abc就是字面量
-    * **符号引用**
-      ：例子：org.simple.People.java文件引用org.simple.Language类，但编译时并不知道Language的实际内存地址，只能使用符号org.simple.Language来代替类的内存地址  
+    * **字面量：** String a = "abc" 这个abc就是字面量
+    * **符号引用：** 虚拟机在编译时候并不知道所引用类的地址，所以只能用符号引用代替，在类加载解析阶段会把符号引用替换成直接引用
+      例子：org.simple.People.java文件引用org.simple.Language类，但编译时并不知道Language的实际内存地址，只能使用符号org.simple.Language来代替类的内存地址  
       ![](../resources/jvm1.jpg)
     * **直接引用**：就是指向具体内存地址
 * **运行时常量池**：用来存放编译期生成的各种字面量和符号引用，这部分内容在类加载后进入该常量池中
