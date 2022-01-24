@@ -1,35 +1,39 @@
 ## IO 基础
+
 ## socket 和 tcp区别
-socket是一种编程，是对TCP和DUP的一种编程  
+
+socket是一种编程，是对TCP和DUP的一种编程
 
 ### 阻塞和非阻塞区别、同步和异步区别
-当一个read操作发生时，它会经历两个阶段：  
-1. 等待数据准备(Waitingfor the data to be ready)  
-2. 将数据从内核拷贝到进程中(Copyingthe data from the kernel to the process)   
+
+当一个read操作发生时，它会经历两个阶段：
+
+1. 等待数据准备(Waitingfor the data to be ready)
+2. 将数据从内核拷贝到进程中(Copyingthe data from the kernel to the process)
 
 **阻塞和非阻塞：** 说的是第一个阶段，如果需要等待数据准备好那么就是阻塞的，反之非阻塞  
-**同步和异步：** 说的是第二个阶段  
+**同步和异步：** 说的是第二个阶段
 
-记住这两点很重要，因为这些IO Model的区别就是在两个阶段上各有不同的情况。是否阻塞说的是第一个阶段，即等待数据准备阶段是否会阻塞，而是否同步说的是第二阶段，即将数据从内核拷贝到进程这个真实的IO Operation操作阶段是否阻塞。  
+记住这两点很重要，因为这些IO Model的区别就是在两个阶段上各有不同的情况。是否阻塞说的是第一个阶段，即等待数据准备阶段是否会阻塞，而是否同步说的是第二阶段，即将数据从内核拷贝到进程这个真实的IO Operation操作阶段是否阻塞。
 
 ### reactor、netty、nio区别
+
 reactor是一种设计模式，实现基础是nio；netty是用了reactor模型
 
 ### io发展史
-单线程bio：一个请求如果被卡住，那么其他的客户端都连不进来
-多线程bio：每个请求都是一个线程，但是开销太大
-no-blocking io(注意这不是java的nio)：接受请求（accept）和读取数据（read）都不会阻塞，bio在这两个都会阻塞。但是nio由于不阻塞就要不断循环遍历所有client，即使部分client都没有数据
-多路复用IO（Nio: new io）：在nio基础上加了多路复用器。
+
+单线程bio：一个请求如果被卡住，那么其他的客户端都连不进来 多线程bio：每个请求都是一个线程，但是开销太大 no-blocking io(注意这不是java的nio)
+：接受请求（accept）和读取数据（read）都不会阻塞，bio在这两个都会阻塞。但是nio由于不阻塞就要不断循环遍历所有client，即使部分client都没有数据 多路复用IO（Nio: new io）：在nio基础上加了多路复用器。
 
 ### select、poll、epoll区别
-Select 每次调用select()方法会把所有的fd一起传到内核，fd数量1024个
-poll 跟select原理一样但是没有个数限制，是一个链表结构
-epoll会在内核开辟一个空间存fd，这样就不用一直传fd，而是由内核通自己循环
+
+Select 每次调用select()方法会把所有的fd一起传到内核，fd数量1024个 poll 跟select原理一样但是没有个数限制，是一个链表结构 epoll会在内核开辟一个空间存fd，这样就不用一直传fd，而是由内核通自己循环
 
 ---
 
 ## reactor
-这儿的Reactor相当于netty的NioEventLoopGroup  
+
+这儿的Reactor相当于netty的NioEventLoopGroup
 
 ①单线程模型，所有绿色和黄色的框都是由一根线程执行的
 ![](../resources/reactor1.jpg)
@@ -38,13 +42,15 @@ epoll会在内核开辟一个空间存fd，这样就不用一直传fd，而是�
 ③主从模式。acceptor是由一个线程池执行（不过netty里boss一般也只有一个线程），read和send由一根线程执行，decode、compute、encode由另一个线程池执行
 ![](../resources/reactor3.jpg)
 
-mainReactor只有一个，负责响应client的连接请求，并建立连接，它使用一个NIO Selector；subReactor可以有一个或者多个，每个subReactor都会在一个独立线程中执行，并且维护独立的NIO Selector。
-一个客户端生成一个channel，mainReactor开一条线程去轮询它。然后当有事件触发时候交给subReactor去调用事件处理器去处理。  
+mainReactor只有一个，负责响应client的连接请求，并建立连接，它使用一个NIO Selector；subReactor可以有一个或者多个，每个subReactor都会在一个独立线程中执行，并且维护独立的NIO
+Selector。 一个客户端生成一个channel，mainReactor开一条线程去轮询它。然后当有事件触发时候交给subReactor去调用事件处理器去处理。
 
 ---
 
 ## 各种模式的代码
+
 一、 java nio（非多路复用）
+
 ```
 public class NioServer {
     public static void main(String[] args) throws Exception {
@@ -89,10 +95,12 @@ public class NioServer {
 
 二、 java nio（多路复用）
 ![](../resources/reactor4.jpg)
-reactor有三种线程模型  
+reactor有三种线程模型
+
 1. 单线程模型，accept和read、write都是由同一个线程执行，即本类这样的写法
 2. 多线程模型，accept不变，仅仅read、write里业务处理改为线程池
 3. 主从模式，accept和read、write用不同的线程和不同的selector
+
 ```
 // 单线程模型
 public class SelectorSingleThreadServer {
@@ -301,6 +309,7 @@ class NioThread extends Thread {
 ```
 
 三、 netty服务端
+
 ```
 public class NettyServer {
     public static void main(String[] args) throws Exception {
