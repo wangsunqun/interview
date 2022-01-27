@@ -21,15 +21,6 @@
 - **查询慢日志（slowlog get）**
     - ![](../resources/redis8.jpg)
 
-## 线程模型
-<font color=red>**redis6以下**</font>  
-是单线程的reactor模型，网络io和计算都是用同一个线程执行的  
-![](../resources/redis9.jpg)
-
-<font color=red>**redis6**</font>  
-改为io是多线程，但是工作线程还是只有一个
-![](../resources/redis10.jpg)
-
 ## [【redis 底层数据结构与数据类型 ppt】](../resources/redis.pptx)
 
 ### 底层数据结构
@@ -80,4 +71,47 @@ kv、list、map、set、zset
     - pfcount：获取计数（和scard的用法一样，直接获取计数）
     - pfmerage：将多个pf计数累加再一起形成一个新的pf值
   - 使用场景：用于做基数统计。什么是基数? 比如数据集 {1, 3, 5, 7, 5, 7, 8}， 那么这个数据集的基数集为 {1, 3, 5 ,7, 8}, 基数(不重复元素)为5。 基数估计就是在误差可接受的范围内，快速计算基数
+
+## 穿透、击穿、雪崩
+1. 穿透  
+   在高并发下，查询一个不存在的值时（黑客行为），缓存不会被命中，导致大量请求直接落到数据库上，如活动系统里面查询一个不存在的活动。
+   - 布隆过滤器
+   - 缓存空值，但是时间不能太长，下次进来是直接返回不存在，但是这种情况无法过滤掉动态的key，就是说每次请求进来都是不同的key，这样还是会造成这个问题
+2. 击穿  
+   在高并发下，对一个特定的值进行查询，但是这个时候缓存正好过期了，缓存没有命中，导致大量请求直接落到数据库上，如活动系统里面查询活动信息，但是在活动进行过程中活动缓存突然过期了。  
+   通过synchronized+双重检查机制：某个key只让一个线程查询，阻塞其它线程  
+```
+private static volaite Object lockHelp=new Object();
+
+   public String getValue(String key){
+     String value=redis.get(key,String.class);
+     
+     if(value=="null"||value==null||StringUtils.isBlank(value){
+         synchronized(lockHelp){
+                value=redis.get(key,String.class);
+                 if(value=="null"||value==null||StringUtils.isBlank(value){
+                     value=db.query(key);
+                      redis.set(key,value,1000);
+                  }
+            }
+           }    
+
+        return value;
+   }
+```
+3. 雪崩  
+   在高并发下，大量的缓存key在同一时间失效，导致大量的请求落到数据库上，如活动系统里面同时进行着非常多的活动，但是在某个时间点所有的活动缓存全部过期。
+   - 可以通过缓存reload机制，预先去更新缓存，再即将发生大并发访问前手动触发加载缓存
+   - 不同的key，设置不同的过期时间，具体值可以根据业务决定，让缓存失效的时间点尽量均匀
+
+
+
+## 线程模型
+<font color=red>**redis6以下**</font>  
+是单线程的reactor模型，网络io和计算都是用同一个线程执行的  
+![](../resources/redis9.jpg)
+
+<font color=red>**redis6**</font>  
+改为io是多线程，但是工作线程还是只有一个
+![](../resources/redis10.jpg)
 
