@@ -147,7 +147,8 @@ private static volaite Object lockHelp=new Object();
 6. **culster**   
    springboot要把主从全写上去，网上说jedis才可以做到主从切换，template不行。有待验证  
    ![](../resources/redis12.jpg)  
-   从redis3.0之后版本支持redis-cluster集群，Redis-Cluster采用无中心结构，每个节点保存数据和整个集群状态,每个节点都和其他所有节点连接。
+   从redis3.0之后版本支持redis-cluster集群，Redis-Cluster采用无中心结构，每个节点保存数据和整个集群状态,每个节点都和其他所有节点连接。主之间平均分配hash槽(一共16384)
+   ，数据不同步。从节点同步主节点内容。但是取数据是根据crc16(key) 取模来获取槽id，再根据id到对于的节点取值。 一个哈希槽可以存储多个key-value。数据就是存储在哈希槽里。
 
     - 优点：
         1. 无中心架构（不存在哪个节点影响性能瓶颈），少了 proxy层。
@@ -158,7 +159,8 @@ private static volaite Object lockHelp=new Object();
     - 缺点：
         1. 资源隔离性较差，容易出现相互影响的情况。
         2. 数据通过异步复制,不保证数据的强一致性
-    - <font color=red>**选举**</font> 当slave发现自己的master变为FAIL状态时，便尝试进行Failover，以期成为新的master。由于挂掉的master可能会有多个slave，从而存在多个slave竞争成为master节点的过程  
+    - <font color=red>**选举**</font>
+      当slave发现自己的master变为FAIL状态时，便尝试进行Failover，以期成为新的master。由于挂掉的master可能会有多个slave，从而存在多个slave竞争成为master节点的过程  
       ![](../resources/redis13.jpg)
       其过程如下：
         1. slave发现自己的master变为FAIL
@@ -168,10 +170,11 @@ private static volaite Object lockHelp=new Object();
         5. 超过半数后变成新Master
         6. 广播Pong通知其他集群节点。
 
-一、主之间平均分配hash槽，数据不同步。从节点同步主节点内容。但是取数据是根据crc16(key) 取模来获取槽id，再根据id到对于的节点取值。
-一个哈希槽可以存储多个key-value。数据就是存储在哈希槽里。五、创建集群的过程Gossip（八卦）协议的使用Redis 集群是去中心化的，彼此之间状态（ 元数据、故障检测、配置更新、故障转移授权）同步靠 gossip
-协议通信，集群的消息有以下几种类型：
+    - <font color=red>**创建集群的过程**</font>
+      ![](../resources/redis14.jpg)
 
+## Gossip（八卦）协议
+Redis 集群是去中心化的，彼此之间状态（ 元数据、故障检测、配置更新、故障转移授权）同步靠 gossip 协议通信，集群的消息有以下几种类型：
 1. Meet 通过「cluster meet ip port」命令，已有集群的节点会向新的节点发送邀请，加入现有集群。
 2. Ping 节点每秒会向集群中其他节点发送 ping 消息，消息中带有自己已知的两个节点的地址、槽、状态信息、最后一次通信时间等。
 3. Pong 节点收到 ping 消息后会回复 pong 消息，消息中同样带有自己已知的两个节点信息。
